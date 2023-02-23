@@ -1,0 +1,23 @@
+server:
+    port: 8088
+spring:
+    kafka:
+        bootstrap-servers: 10.100.1.166:9092
+        listener:
+            missing-topics-fatal: false
+            type: batch
+        producer:
+            acks: 1
+            batch-size: 10000
+            buffer-memory: 33554432
+            key-serializer: org.apache.kafka.common.serialization.StringSerializer
+            retries: 1
+            value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    task:
+      execution:
+        pool:
+          core-size: 100
+          max-size: 1000
+          queue-capacity: 5000
+      
+
