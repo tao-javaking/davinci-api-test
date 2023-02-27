@@ -13,11 +13,8 @@ spring:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             retries: 1
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
-    task:
-      execution:
-        pool:
-          core-size: 100
-          max-size: 1000
-          queue-capacity: 5000
-      
+
+#日志文件配置
+logging:
+    config: classpath:logback.xml
 
