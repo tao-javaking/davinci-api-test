@@ -13,7 +13,20 @@ spring:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             retries: 1
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
-
+            topic: dfp
+#可见性测试脚本工具配置
+flow:
+    #画像API接口IP地址 + 端口
+    url: http://10.100.1.169
+    #系统渠道 需要在画像中配置
+    sys-channel: test1
+    send-config:
+        #数据产生到api查询出结果的超时等待时间，超过后将视为此次api调用失败获取，ms
+        wait-time: 1000
+        #批量产生数据的大小，需要根据画像API接口处理能力进行调整
+        batch-size: 2000
+        #api接口调用线程数配置
+        queue-count: 10
 #日志文件配置
 logging:
     config: classpath:logback.xml

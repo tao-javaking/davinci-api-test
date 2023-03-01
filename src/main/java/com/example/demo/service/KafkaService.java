@@ -17,7 +17,7 @@ public class KafkaService {
 	@Resource
     private KafkaTemplate<String, String> kafkaTemplate;
 
-	@Value("${dfp.topic:dfp}")
+	@Value("${spring.kafka.producer.topic:dfp}")
 	private String topic;
 
 	public ListenableFuture<SendResult<String, String>> send(String json) {

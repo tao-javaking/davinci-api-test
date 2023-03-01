@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.example.demo.constant.FlowGenDataConstants.*;
+
 /**
  * @author cgj 类说明
  */
@@ -44,24 +46,26 @@ public class DavinciApiTestController implements InitializingBean {
     private Logger logger = LoggerFactory.getLogger(DavinciApiTestController.class);
     @Value("${flow.url:http://10.100.1.169}")
     private String url;
-    @Value("${flow.sys.channel:test1}")
+    @Value("${flow.sys-channel:test1}")
     private String sysChannel;
+    @Value("${flow.send-config.wait-time:1000}")
+    private final long timeout = 1000L;
+    @Value("${flow.send-config.batch-size:2000}")
+    private final int batchSize = 2000;
+    @Value("${flow.send-config.queue-count:10}")
+    private int concurrentQueueCount;
     @Resource
     private KafkaService kafkaService;
     private ConcurrentLinkedDeque<DataNode> inputQueue;
     @Resource
     private RestTemplate template;
     private boolean flag;
-    private int concurrentQueueCount;
     private ExecutorService threadPool;
-
-    private final long timeout = 1000L;
-    private final int batchSize = 2000;
 
     @GetMapping("/get/{limit}")
     public String send(@PathVariable int limit) throws InterruptedException {
         if(flag) {
-            return "请等上次测试结果结束，再发送压测请求";
+            return REQUEST_NOT_END;
         }
         long startTime = System.currentTimeMillis();
         long d1 = System.currentTimeMillis();
@@ -96,7 +100,7 @@ public class DavinciApiTestController implements InitializingBean {
                     d1 = System.currentTimeMillis();
                 }
             } catch (Exception e) {
-                logger.error("等待执行完毕出错：", e);
+                logger.error(WAIT_EXCUTE_FAILED, e);
             }
         }
 
@@ -112,7 +116,7 @@ public class DavinciApiTestController implements InitializingBean {
             writer.write("\n");
             writer.flush();
         } catch (IOException e) {
-            logger.error("写文件异常：", e);
+            logger.error(FILE_WRITE_FAILED, e);
         }
     }
 
@@ -142,7 +146,7 @@ public class DavinciApiTestController implements InitializingBean {
             listenableFuture.addCallback(new ListenableFutureCallback<SendResult<String, String>>() {
                 @Override
                 public void onFailure(Throwable throwable) {
-                    logger.error("kafka send message fail,error:", throwable);
+                    logger.error(KAFKA_SEND_MESSAGE_FAILED, throwable);
                 }
 
                 @Override
@@ -167,7 +171,7 @@ public class DavinciApiTestController implements InitializingBean {
         long startTime = dataNode.getDate();
         String uu = String.format(url + FlowGenDataConstants.API, dataNode.getDfp(), sysChannel);
         int status = 0;
-        String messageTemplate = "result:{},url:{},{},{},{}";
+        String messageTemplate = RESULT_WRITE_TEMPLATE;
 
         if (System.currentTimeMillis() - startTime >= timeout) {
             writeTxtFile(String.format(messageTemplate, "fail", uu, dataNode.getDfp(), startTime, System.currentTimeMillis() - startTime));
@@ -176,7 +180,7 @@ public class DavinciApiTestController implements InitializingBean {
         }
 
         ResponseEntity<String> resp = template.getForEntity(uu, String.class);
-        if (Optional.ofNullable(resp.getBody()).orElse("").contains("\"code\":200")) {
+        if (Optional.ofNullable(resp.getBody()).orElse("").contains(RESPONSE_TEMPLATE)) {
             writeTxtFile(String.format(messageTemplate, "success", uu, dataNode.getDfp(), startTime, System.currentTimeMillis() - startTime));
             dataCounter.getSuccess().incrementAndGet();
             status = 1;
@@ -198,7 +202,6 @@ public class DavinciApiTestController implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         inputQueue = new ConcurrentLinkedDeque<>();
-        concurrentQueueCount = 10;
         threadPool = Executors.newFixedThreadPool(200);
     }
 }
